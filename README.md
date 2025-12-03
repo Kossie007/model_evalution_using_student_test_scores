@@ -13,6 +13,8 @@
 We will carry out prediction based analysis on primary school literature and math scores from 2019 including more than 70K students from Hungary. 
 
 ## Repository structure
+
+```text
 .
 ├── data/
 │   ├── okm_diak_adat.csv              # raw OKM student-level dataset

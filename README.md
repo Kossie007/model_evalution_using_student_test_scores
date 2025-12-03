@@ -24,7 +24,7 @@ We will carry out prediction based analysis on primary school literature and mat
 │   ├── 01_data_modification.ipynb     # data cleaning, NA handling, feature engineering
 │   ├── 02_regressions.ipynb           # regression models and diagnostics
 │   ├── 03_tree_forest.ipynb           # decision trees and random forests
-│   ├── 04_boosting.ipynb              # boosting models (e.g. gradient boosting)
+│   ├── 04_boosting.ipynb              # boosting models
 │   └── 05_main.py                     # main script to run the full modelling pipeline
 ├── figures/
 │   └── na_plot.png                    # visualization of missing values by variable

@@ -14,19 +14,19 @@ We will carry out prediction based analysis on primary school literature and mat
 
 ## Repository structure
 .
-├── codes/
-│   ├── 01_data_modification.ipynb
-│   ├── 02_regressions.ipynb
-│   ├── 03_tree_forest.ipynb
-│   ├── 04_boosting.ipynb
-│   └── 05_main.py
 ├── data/
-│   ├── okm_diak_adat.csv
-│   ├── filtered_data_anal.csv
-│   └── filtered_data_eval.csv
+│   ├── okm_diak_adat.csv              # raw OKM student-level dataset
+│   ├── filtered_data_anal.csv         # 90% training/analysis sample
+│   └── filtered_data_eval.csv         # 10% evaluation/holdout sample
+├── codes/
+│   ├── 01_data_modification.ipynb     # data cleaning, NA handling, feature engineering
+│   ├── 02_regressions.ipynb           # regression models and diagnostics
+│   ├── 03_tree_forest.ipynb           # decision trees and random forests
+│   ├── 04_boosting.ipynb              # boosting models (e.g. gradient boosting)
+│   └── 05_main.py                     # main script to run the full modelling pipeline
 ├── figures/
-│   └── na_plot.png
+│   └── na_plot.png                    # visualization of missing values by variable
 ├── documents/
-│   └── analysis.pdf
-├── README.md                
-└── requirements.txt             
+│   └── analysis.pdf                   # written report in .pdf format
+├── requirements.txt                   # Python dependencies
+└── README.md                          # project description and usage

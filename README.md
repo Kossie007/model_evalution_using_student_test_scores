@@ -12,6 +12,7 @@
 ## Project overview
 We will carry out prediction based analysis on primary school literature and math scores from 2019 including more than 70K students from Hungary. 
 
+## Repository structure
 .
 ├── codes/
 │   ├── 01_data_modification.ipynb   # data cleaning, imputation, feature engineering

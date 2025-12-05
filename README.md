@@ -86,3 +86,7 @@ file: `documents/analysis.pdf`
 ├── requirements.txt                   # Python dependencies
 └── README.md                          # project description and usage
 ```
+
+### Licence
+MIT License (MIT): see the [License File](https://github.com/sensiolabs/GotenbergBundle/blob/1.x/LICENSE) for more details.
+

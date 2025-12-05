@@ -35,6 +35,7 @@ Plaintext
 │   └── analysis.pdf                   # written report in .pdf format
 ├── requirements.txt                   # Python dependencies
 └── README.md                          # project description and usage
+```
 
 #### Scripts
 The analysis is divided into sequential notebooks and a main execution script located in the codes/ folder.
@@ -71,3 +72,4 @@ The final written report summarizing the methodology, model comparisons, interpr
 │   └── analysis.pdf                   # written report in .pdf format
 ├── requirements.txt                   # Python dependencies
 └── README.md                          # project description and usage
+```

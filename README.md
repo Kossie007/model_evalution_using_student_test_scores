@@ -1,35 +1,3 @@
-# Applying and Interpreting Machine Learning – Group Project  
-
-## Predicting Student Performance from Competency Assessments: A Comparison of Tree-Based Models on Raw and MissForest-Imputed Data 
-
-### Team members
-- Kristóf Andrási  
-- Gellért Banai
-- Hunor Kuti
-- Kristóf Légrádi
-- Ákos Virág
-
-## Project overview
-We will carry out prediction based analysis on primary school literature and math scores from 2019 including more than 70K students from Hungary. 
-
-## Repository structure
-
-```text
-.
-├── data/
-│   ├── okm_diak_adat.csv              # raw OKM student-level dataset
-│   ├── filtered_data_anal.csv         # 90% training/analysis sample
-│   └── filtered_data_eval.csv         # 10% evaluation/holdout sample
-├── codes/
-│   ├── 01_data_modification.ipynb     # data cleaning, NA handling, feature engineering
-│   ├── 02_regressions.ipynb           # regression models and diagnostics
-│   ├── 03_tree_forest.ipynb           # decision trees and random forests
-│   ├── 04_boosting.ipynb              # boosting models
-│   └── 05_main.py                     # main script to run the full modelling pipeline
-
-
-
-
 # Predicting Student Performance from Competency Assessments
 ## A Comparison of Tree-Based Models on Raw and MissForest-Imputed Data
 
@@ -49,7 +17,7 @@ The primary objective of this project is to predict student scores using various
 
 ### Repository Structure
 Plaintext
-
+```text
 .
 ├── data/
 │   ├── okm_diak_adat.csv              # raw OKM student-level dataset
@@ -96,6 +64,7 @@ file: `figures/na_plot.png`
 -  file: `documents/analysis.pdf`
 The final written report summarizing the methodology, model comparisons, interpretation of feature importance, and conclusions regarding the efficacy of imputation in educational data mining.
 
+```text
 ├── figures/
 │   └── na_plot.png                    # visualization of missing values by variable
 ├── documents/

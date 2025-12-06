@@ -20,8 +20,7 @@ The primary objective of this project is to predict student scores using various
 .
 ├── data/
 │   ├── okm_diak_adat.csv              # raw OKM student-level dataset
-│   ├── filtered_data_anal.csv         # 90% training/analysis sample
-│   └── filtered_data_eval.csv         # 10% evaluation/holdout sample
+│   └── filtered_data_anal.csv         # cleaned data for analysis
 ├── codes/
 │   ├── 01_data_modification.ipynb     # data cleaning, NA handling, feature engineering
 │   ├── 02_regressions.ipynb           # regression models and diagnostics
@@ -61,10 +60,8 @@ file: `okm_diak_adat.csv`
 -  The raw, student-level dataset containing math and literature scores, along with background questionnaires regarding socio-economic status and school environment.
 
 file: `filtered_data_anal.csv`
--  The training and analysis set, comprising 90% of the filtered data. This is used for model training and cross-validation.
+-  The training and analysis set, comprising 100% of the filtered data. This is split for training and test sets during the analysis.
 
-file: `filtered_data_eval.csv`
--  The holdout evaluation set, comprising 10% of the data. This is used strictly for final performance evaluation to prevent data leakage.
 
 file: `variable_description.txt`
 -  Introductory dataset of used variables giving ranges, basic statistics and categories.

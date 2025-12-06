@@ -124,6 +124,7 @@ print()
 data.isnull().sum().plot(kind='bar', fontsize=12, figsize=(12, 4))
 plt.title(f'Variables less than {na_ratio:.0%} NA ratio', fontsize=18)
 plt.axhline(y=len(data)*percentage_of_NA, color='red')
+plt.savefig('../figures/all_na_plot.png', dpi=300, bbox_inches='tight')
 plt.show()
 
 print("Available features after filtering NAs:")
@@ -239,6 +240,7 @@ data = data.drop(columns=cols_to_drop, errors='ignore')
 data.isnull().sum().plot(kind='bar', fontsize=12, figsize=(12, 4))
 plt.title(f'Variables less than {na_ratio:.0%} NA ratio', fontsize=18)
 plt.axhline(y=len(data)*percentage_of_NA, color='red')
+plt.savefig('../figures/filtered_na_plot.png', dpi=300, bbox_inches='tight')
 plt.show()
 
 # saving the plot
@@ -426,6 +428,7 @@ len(data)  # 56590 -> 56569 21 obs
 
 data.isnull().sum().plot(kind='bar', fontsize=12, figsize=(12, 4))
 plt.title(f'Variables less than {na_ratio:.0%} NA ratio', fontsize=18)
+plt.savefig('../figures/start_data_plot.png', dpi=300, bbox_inches='tight')
 plt.show()
 
 # creating a student/teacher ratio
@@ -475,6 +478,7 @@ X = filtered_data_anal.drop(columns=[target_col])
 plt.figure()
 y.hist()
 plt.title("Distribution of math_score_8_std")  # standardized approx normal
+plt.savefig('../figures/distribution_of_math_score.png', dpi=300, bbox_inches='tight')
 plt.show()
 
 # Checking numeric vs categorical features
@@ -836,6 +840,7 @@ plot_tree(
     impurity=False
 )
 plt.title("Best Decision Tree Regressor", fontsize=20)
+plt.savefig('../figures/decision_tree_tree.png', dpi=300, bbox_inches='tight')
 plt.show()
 
 # Extracting best Random Forest from GridSearchCV
@@ -860,6 +865,7 @@ plt.xlabel('Feature Importance')
 plt.ylabel('Feature')
 plt.title('Top 20 Feature Importances - Random Forest', fontsize=20)
 plt.tight_layout()
+plt.savefig('../figures/random_forest_importance.png', dpi=300, bbox_inches='tight')
 plt.show()
 
 print(importances_df)

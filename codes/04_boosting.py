@@ -128,7 +128,7 @@ mpl.rcParams.update({
     "figure.dpi": 600,
 })
 
-save_dir = r"C:\Users\User\Desktop\Figures\Figures"
+save_dir = r"../figures"
 os.makedirs(save_dir, exist_ok=True)
 
 # Plot 1: True vs. predicted values
@@ -200,4 +200,5 @@ ax.set_title("Top 20 feature importances (XGBoost)")
 
 fig.tight_layout()
 fig.savefig(os.path.join(save_dir, "feature_importance.png"), dpi=600)
+
 plt.close(fig)

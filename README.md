@@ -1,5 +1,5 @@
 # Predicting Student Performance from Competency Assessments
-## A Comparison of Tree-Based Models on Raw and MissForest-Imputed Data
+## A Comparison of Tree-Based Models
 
 ### Course: Applying and Interpreting Machine Learning – Group Project
 
@@ -14,7 +14,7 @@
 ### Project Overview
 This repository contains the code and analysis for a group project investigating the predictors of student academic performance in Hungary. We analyze primary school literature and mathematics scores from the 2019 National Assessment of Basic Competencies (Országos Kompetenciamérés - OKM), covering a dataset of over 70,000 students.
 
-The primary objective of this project is to predict student scores using various socio-economic and school-level features. A specific focus is placed on the methodological comparison between using tree-based machine learning models on raw data versus data imputed using the MissForest algorithm.
+The primary objective of this project is to predict student scores using various socio-economic and school-level features. A specific focus is placed on the methodological comparison between using tree-based machine learning models.
 
 ---
 ### Repository Structure
@@ -29,7 +29,6 @@ The primary objective of this project is to predict student scores using various
 │   ├── 02_regressions.ipynb           # regression models and diagnostics
 │   ├── 03_tree_forest.ipynb           # decision trees and random forests
 │   ├── 04_boosting.ipynb              # boosting models
-│   ├── 01-04_model_evaluation_using_student_scores.ipynb         # combined python notebook consisting of a synthesized code. runtime ~ 1200 sec.
 │   └── 01-04_model_evaluation_using_student_scores.py            # combined Python file consisting of a synthesized code. runtime ~ 1200 sec.
 ├── documents/
 │   └── analysis.pdf                   # written report in .pdf format
@@ -68,9 +67,6 @@ file: `03_tree_forest.ipynb`
 
 file: `04_boosting.ipynb`
 -  Implements gradient boosting techniques (e.g., XGBoost/LightGBM) to push predictive performance further, continuing the comparison between data handling strategies.
-
-file: `01-04_model_evaluation_using_student_scores.ipynb`
--  A consolidated script designed to run the full modeling pipeline from end to end.
 
 file: `01-04_model_evaluation_using_student_scores.py`
 -  A consolidated script designed to run the full modeling pipeline from end to end.

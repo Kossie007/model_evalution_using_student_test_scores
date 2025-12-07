@@ -511,11 +511,48 @@ print("Shapes — original:", X_tr.shape,
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --
 # Plain linear regression ----
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --
+import statsmodels.api as sm
+
+
 lin = LinearRegression().fit(X_tr_s, y_tr)
 y_lin = lin.predict(X_te_s)
 
-print(f"LinearRegression — Test R^2: {r2_score(y_te, y_lin):.3f} | "
-      f"RMSE: {np.sqrt(mean_squared_error(y_te, y_lin)):.3f}")
+r2_lin   = r2_score(y_te, y_lin)
+rmse_lin = np.sqrt(mean_squared_error(y_te, y_lin))
+
+# Statsmodels OLS for p values and ses
+X_sm = sm.add_constant(X_tr_s)
+ols_sm = sm.OLS(y_tr, X_sm).fit()
+
+
+params  = ols_sm.params # coefs
+pvalues = ols_sm.pvalues # pvalues
+ses     = ols_sm.bse # ses
+
+# feature names: constant + column names
+feature_names = ['Intercept'] + list(X_tr.columns)
+
+rows = []
+
+
+rows.append({"type": "metric", "name": "R2_test",
+             "coef": r2_lin, "std_err": np.nan, "p_value": np.nan})
+rows.append({"type": "metric", "name": "RMSE_test",
+             "coef": rmse_lin, "std_err": np.nan, "p_value": np.nan})
+
+# for a nice plot
+for name, b, se, p in zip(feature_names, params, ses, pvalues):
+    rows.append({
+        "type": "coef",
+        "name": name,
+        "coef": b,
+        "std_err": se,
+        "p_value": p
+    })
+
+ols_summary = pd.DataFrame(rows)
+
+print(ols_summary)
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --
 # Baseline regression: always predict 0
@@ -595,6 +632,19 @@ for l in lambda_ridge:
     })
 
 res_ridge = pd.DataFrame(rows)
+
+# ---- Ridge coefficients summary (no metrics) ----
+coef_ridge = ridge_cv.coef_
+intercept_ridge = ridge_cv.intercept_
+
+feature_names = X_tr.columns
+
+ridge_coef_table = pd.DataFrame({
+    "feature": ["Intercept"] + list(feature_names),
+    "coef_ridge": [intercept_ridge] + list(coef_ridge)
+})
+
+print(ridge_coef_table)
 
 plt.figure()
 plt.semilogx(res_ridge["alpha"], res_ridge["RMSE_test"], marker="o", label="Test RMSE")
@@ -702,6 +752,19 @@ for l in lambda_lasso:
     })
 
 res_lasso = pd.DataFrame(rows)
+
+# ---- Lasso coefficients summary (no metrics) ----
+coef_lasso = lasso_cv.coef_
+intercept_lasso = lasso_cv.intercept_
+
+feature_names = X_tr.columns
+
+lasso_coef_table = pd.DataFrame({
+    "feature": ["Intercept"] + list(feature_names),
+    "coef_lasso": [intercept_lasso] + list(coef_lasso)
+})
+
+print(lasso_coef_table)
 
 plt.figure()
 plt.semilogx(res_lasso["alpha"], res_lasso["RMSE_test"], marker="o", label="Test RMSE")
@@ -1098,3 +1161,4 @@ plt.close(fig)
 #Time elapsed since t.tic()
 
 t.toc()
+

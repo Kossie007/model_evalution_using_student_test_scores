@@ -1,11 +1,3 @@
-# importing libraries
-!pip install pytictoc
-import pytictoc
-from pytictoc import TicToc
-t = TicToc() #create instance of class for timer
-t.tic() #Start timer
-
-
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --
 # Imports, helpers, and a single train/test split wrapper ----
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --
@@ -32,10 +24,15 @@ def install_and_import(package, import_name=None):
 pd = install_and_import("pandas")
 np = install_and_import("numpy")
 plt = install_and_import("matplotlib.pyplot", "matplotlib.pyplot")
+pytictoc = install_and_import("pytictoc")
+
+from pytictoc import TicToc
 
 #  seed
 seed = 314 + 133 + 76223 + 3 + 5
 np.random.seed(seed)
+t = TicToc() #create instance of class for timer
+t.tic() #Start timer
 
 # sklearn model_selection only once
 sklearn_model_selection = install_and_import("sklearn.model_selection", "sklearn.model_selection")
@@ -522,7 +519,8 @@ print(f"LinearRegression — Test R^2: {r2_score(y_te, y_lin):.3f} | "
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --
 
 # Baseline predictions (all zeros)
-y_pred_baseline = np.zeros_like(y_te)
+baseline_value = y_te.mean()
+y_pred_baseline = np.full_like(y_te, baseline_value, dtype=float)
 
 # Baseline metrics
 mse_baseline = mean_squared_error(y_te, y_pred_baseline)
@@ -1051,4 +1049,5 @@ plt.show()
 plt.close(fig)
 
 #Time elapsed since t.tic()
+
 t.toc()

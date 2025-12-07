@@ -30,6 +30,10 @@ The primary objective of this project is to predict student scores using various
 │   ├── 03_tree_forest.ipynb           # decision trees and random forests
 │   ├── 04_boosting.ipynb              # boosting models
 │   └── 01-04_model_evaluation_using_student_scores.py            # combined Python file consisting of a synthesized code. runtime ~ 1200 sec.
+├── outputs/
+│   ├── metrics.json                   # rmetrics of all models
+│   ├── test_predictions.csv           # test predictions of all models
+│   ├── train_predictions.csv          # train predictions of all models
 ├── documents/
 │   └── analysis.pdf                   # written report in .pdf format
 ├── figures/
@@ -83,6 +87,22 @@ file: `filtered_data_anal.csv`
 file: `alt_2019_codebook.txt`
 -  Introductory dataset of used variables giving ranges, basic statistics, and categories.
 
+#### Outputs
+The outputs/ folder contains the predictions and the metrics of our models.
+file: `metrics.json`
+- Global run information: Python/library versions, CPU count, random seed, train/test sizes, and test size fraction.
+- Model selection setup: cross-validation settings (type, number of folds/repeats, scoring), and hyperparameter search configuration for Ridge, Lasso, Decision Tree, Random Forest, and XGBoost.
+- Hyperparameter spaces: grids / ranges used in tuning (e.g., lambdas for Ridge/Lasso, depth/leaf/grid for trees, and the XGBoost search space).
+- Best hyperparameters: selected values for each model (e.g., best lambda for Ridge/Lasso, best depth/leaves/estimators for trees and RF, best XGBoost configuration).
+- Performance metrics for each model (baseline, OLS, Ridge, Lasso, Decision Tree, Random Forest, XGBoost): train and test RMSE, MAE, and R².
+- Overall runtime (seconds) from start to end of the modelling script.
+
+file: `test_predictions.csv`
+- One row per observation in the held-out test set.
+
+file: `train_predictions.csv`
+- One row per observation in the training set used for model fitting.
+  
 
 #### Figures and Reports
 file: `figures/all_na_plot.png`  

@@ -511,48 +511,11 @@ print("Shapes — original:", X_tr.shape,
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --
 # Plain linear regression ----
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --
-import statsmodels.api as sm
-
-
 lin = LinearRegression().fit(X_tr_s, y_tr)
 y_lin = lin.predict(X_te_s)
 
-r2_lin   = r2_score(y_te, y_lin)
-rmse_lin = np.sqrt(mean_squared_error(y_te, y_lin))
-
-# Statsmodels OLS for p values and ses
-X_sm = sm.add_constant(X_tr_s)
-ols_sm = sm.OLS(y_tr, X_sm).fit()
-
-
-params  = ols_sm.params # coefs
-pvalues = ols_sm.pvalues # pvalues
-ses     = ols_sm.bse # ses
-
-# feature names: constant + column names
-feature_names = ['Intercept'] + list(X_tr.columns)
-
-rows = []
-
-
-rows.append({"type": "metric", "name": "R2_test",
-             "coef": r2_lin, "std_err": np.nan, "p_value": np.nan})
-rows.append({"type": "metric", "name": "RMSE_test",
-             "coef": rmse_lin, "std_err": np.nan, "p_value": np.nan})
-
-# for a nice plot
-for name, b, se, p in zip(feature_names, params, ses, pvalues):
-    rows.append({
-        "type": "coef",
-        "name": name,
-        "coef": b,
-        "std_err": se,
-        "p_value": p
-    })
-
-ols_summary = pd.DataFrame(rows)
-
-print(ols_summary)
+print(f"LinearRegression — Test R^2: {r2_score(y_te, y_lin):.3f} | "
+      f"RMSE: {np.sqrt(mean_squared_error(y_te, y_lin)):.3f}")
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --
 # Baseline regression: always predict 0
@@ -632,19 +595,6 @@ for l in lambda_ridge:
     })
 
 res_ridge = pd.DataFrame(rows)
-
-# ---- Ridge coefficients summary (no metrics) ----
-coef_ridge = ridge_cv.coef_
-intercept_ridge = ridge_cv.intercept_
-
-feature_names = X_tr.columns
-
-ridge_coef_table = pd.DataFrame({
-    "feature": ["Intercept"] + list(feature_names),
-    "coef_ridge": [intercept_ridge] + list(coef_ridge)
-})
-
-print(ridge_coef_table)
 
 plt.figure()
 plt.semilogx(res_ridge["alpha"], res_ridge["RMSE_test"], marker="o", label="Test RMSE")
@@ -752,19 +702,6 @@ for l in lambda_lasso:
     })
 
 res_lasso = pd.DataFrame(rows)
-
-# ---- Lasso coefficients summary (no metrics) ----
-coef_lasso = lasso_cv.coef_
-intercept_lasso = lasso_cv.intercept_
-
-feature_names = X_tr.columns
-
-lasso_coef_table = pd.DataFrame({
-    "feature": ["Intercept"] + list(feature_names),
-    "coef_lasso": [intercept_lasso] + list(coef_lasso)
-})
-
-print(lasso_coef_table)
 
 plt.figure()
 plt.semilogx(res_lasso["alpha"], res_lasso["RMSE_test"], marker="o", label="Test RMSE")
@@ -1162,3 +1099,269 @@ plt.close(fig)
 
 t.toc()
 
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --
+# Export metrics.json and train/test prediction CSVs (FINAL)
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --
+
+import json
+import multiprocessing as mp
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LinearRegression, Ridge, Lasso
+
+
+# Make sure outputs dir exists
+OUTPUT_DIR = os.path.join("..", "outputs")
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# We use the XGBoost split as the common evaluation split:
+# X_train, X_test, y_train, y_test must come from the XGBoost block above.
+
+# -------- Linear models on numeric-only features (OLS, Ridge, Lasso) --------
+
+# numeric columns from the XGBoost features
+num_cols_export = X_train.select_dtypes(include=[np.number]).columns.tolist()
+
+X_train_num = X_train[num_cols_export].copy()
+X_test_num = X_test[num_cols_export].copy()
+
+scaler_export = StandardScaler()
+X_train_num_s = scaler_export.fit_transform(X_train_num)
+X_test_num_s = scaler_export.transform(X_test_num)
+
+# Refit linear models for this split (use tuned lambdas)
+ols_export = LinearRegression()
+ols_export.fit(X_train_num_s, y_train)
+
+ridge_export = Ridge(alpha=float(best_lambda))
+ridge_export.fit(X_train_num_s, y_train)
+
+lasso_export = Lasso(alpha=float(best_lambda_lasso), max_iter=1000, tol=1e-5)
+lasso_export.fit(X_train_num_s, y_train)
+
+y_pred_ols_train = ols_export.predict(X_train_num_s)
+y_pred_ols_test = ols_export.predict(X_test_num_s)
+
+y_pred_ridge_train = ridge_export.predict(X_train_num_s)
+y_pred_ridge_test = ridge_export.predict(X_test_num_s)
+
+y_pred_lasso_train = lasso_export.predict(X_train_num_s)
+y_pred_lasso_test = lasso_export.predict(X_test_num_s)
+
+# -------- Baseline: predict train mean --------
+
+baseline_mean = float(y_train.mean())
+y_pred_baseline_train = np.full_like(y_train, baseline_mean, dtype=float)
+y_pred_baseline_test = np.full_like(y_test, baseline_mean, dtype=float)
+
+# -------- Tree-based models: Decision Tree & Random Forest --------
+
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.compose import ColumnTransformer, make_column_selector as selector
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder
+
+numeric_features_export = selector(dtype_include=np.number)(X_train)
+categorical_features_export = selector(dtype_include=object)(X_train)
+
+ohe_dense_export = OneHotEncoder(handle_unknown="ignore", sparse_output=False)
+
+numeric_pipe_export = Pipeline([
+    ("impute", SimpleImputer(strategy="median")),
+])
+
+categorical_pipe_export = Pipeline([
+    ("impute", SimpleImputer(strategy="most_frequent")),
+    ("onehot", ohe_dense_export),
+])
+
+preprocess_export = ColumnTransformer([
+    ("num", numeric_pipe_export, numeric_features_export),
+    ("cat", categorical_pipe_export, categorical_features_export),
+], remainder="drop", sparse_threshold=0.0)
+
+# Decision Tree with best params from earlier grid-search
+best_tree_params = tree_gs.best_params_
+tree_export = DecisionTreeRegressor(
+    max_depth=best_tree_params["model__max_depth"],
+    min_samples_leaf=best_tree_params["model__min_samples_leaf"],
+    random_state=76678,
+)
+
+tree_pipe_export = Pipeline([
+    ("preprocess", preprocess_export),
+    ("model", tree_export),
+])
+tree_pipe_export.fit(X_train, y_train)
+
+y_pred_tree_train = tree_pipe_export.predict(X_train)
+y_pred_tree_test = tree_pipe_export.predict(X_test)
+
+# Random Forest with best params from earlier grid-search
+best_rf_params = rf_gs.best_params_
+rf_export = RandomForestRegressor(
+    n_estimators=best_rf_params["model__n_estimators"],
+    max_depth=best_rf_params["model__max_depth"],
+    min_samples_leaf=best_rf_params["model__min_samples_leaf"],
+    max_features=best_rf_params["model__max_features"],
+    random_state=76678,
+    n_jobs=-1,
+)
+
+rf_pipe_export = Pipeline([
+    ("preprocess", preprocess_export),
+    ("model", rf_export),
+])
+rf_pipe_export.fit(X_train, y_train)
+
+y_pred_rf_train = rf_pipe_export.predict(X_train)
+y_pred_rf_test = rf_pipe_export.predict(X_test)
+
+# -------- XGBoost model re-fitted once with best hyperparameters --------
+
+xgb_best_params = random_search.best_params_.copy()
+xgb_best_params.update({
+    "objective": "reg:squarederror",
+    "tree_method": "hist",
+    "enable_categorical": True,
+    "random_state": seed,
+})
+
+xgb_export = XGBRegressor(**xgb_best_params)
+xgb_export.fit(X_train, y_train)
+
+y_pred_xgb_train = xgb_export.predict(X_train)
+y_pred_xgb_test = xgb_export.predict(X_test)
+
+# -------- Metrics helpers --------
+
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+
+def reg_metrics(y_tr, yhat_tr, y_te, yhat_te):
+    return {
+        "train": {
+            "rmse": float(np.sqrt(mean_squared_error(y_tr, yhat_tr))),
+            "mae": float(mean_absolute_error(y_tr, yhat_tr)),
+            "r2": float(r2_score(y_tr, yhat_tr)),
+        },
+        "test": {
+            "rmse": float(np.sqrt(mean_squared_error(y_te, yhat_te))),
+            "mae": float(mean_absolute_error(y_te, yhat_te)),
+            "r2": float(r2_score(y_te, yhat_te)),
+        },
+    }
+
+# Runtime since t.tic()
+elapsed_seconds = float(t.tocvalue())
+
+# -------- Build metrics.json --------
+
+import sklearn as sk
+
+metrics = {
+    "python": {
+        "version": sys.version,
+        "numpy": np.__version__,
+        "pandas": pd.__version__,
+        "sklearn": sk.__version__,
+        "xgboost": xgb.__version__,
+    },
+    "hardware": {
+        "cpu_count": mp.cpu_count(),
+    },
+    "data": {
+        "target": target_col,
+        "train_size": int(X_train.shape[0]),
+        "test_size": int(X_test.shape[0]),
+        "test_size_fraction": float(TEST_SIZE),
+        "random_state": int(split_random_state),
+    },
+    "cv_and_search": {
+        "ridge": {
+            "type": "KFold",
+            "n_splits": 5,
+            "shuffle": True,
+            "random_state": 76678,
+        },
+        "lasso": {
+            "type": "LassoCV",
+            "cv": 5,
+            "random_state": 76678,
+        },
+        "tree_and_random_forest": {
+            "type": "RepeatedKFold",
+            "n_splits": 5,
+            "n_repeats": 5,
+            "random_state": 76678,
+        },
+        "xgboost": {
+            "search_method": "RandomizedSearchCV",
+            "n_iter": 30,
+            "cv": 5,
+            "scoring": "neg_root_mean_squared_error",
+            "n_jobs": -1,
+        },
+    },
+    "hyperparameter_spaces": {
+        "ridge_alpha_grid": [float(a) for a in lambda_ridge],
+        "lasso_alpha_grid": [float(a) for a in lambda_lasso],
+        "decision_tree": param_grid_tree,
+        "random_forest": param_grid_rf,
+        "xgboost": param_distributions,
+    },
+    "best_hyperparameters": {
+        "ridge": {"alpha": float(best_lambda)},
+        "lasso": {"alpha": float(best_lambda_lasso)},
+        "decision_tree": best_tree_params,
+        "random_forest": best_rf_params,
+        "xgboost": random_search.best_params_,
+    },
+    "metrics": {
+        "baseline_mean": reg_metrics(y_train, y_pred_baseline_train, y_test, y_pred_baseline_test),
+        "ols":           reg_metrics(y_train, y_pred_ols_train,      y_test, y_pred_ols_test),
+        "ridge":         reg_metrics(y_train, y_pred_ridge_train,    y_test, y_pred_ridge_test),
+        "lasso":         reg_metrics(y_train, y_pred_lasso_train,    y_test, y_pred_lasso_test),
+        "decision_tree": reg_metrics(y_train, y_pred_tree_train,     y_test, y_pred_tree_test),
+        "random_forest": reg_metrics(y_train, y_pred_rf_train,       y_test, y_pred_rf_test),
+        "xgboost":       reg_metrics(y_train, y_pred_xgb_train,      y_test, y_pred_xgb_test),
+    },
+    "runtime_seconds": elapsed_seconds,
+}
+
+metrics_path = os.path.join(OUTPUT_DIR, "metrics.json")
+with open(metrics_path, "w") as f:
+    json.dump(metrics, f, indent=2)
+
+# -------- train_predictions.csv and test_predictions.csv --------
+
+train_pred_df = pd.DataFrame({
+    "row_id": X_train.index,
+    "y_true": y_train.values,
+    "y_pred_baseline_mean": y_pred_baseline_train,
+    "y_pred_ols":           y_pred_ols_train,
+    "y_pred_ridge":         y_pred_ridge_train,
+    "y_pred_lasso":         y_pred_lasso_train,
+    "y_pred_tree":          y_pred_tree_train,
+    "y_pred_random_forest": y_pred_rf_train,
+    "y_pred_xgboost":       y_pred_xgb_train,
+})
+
+test_pred_df = pd.DataFrame({
+    "row_id": X_test.index,
+    "y_true": y_test.values,
+    "y_pred_baseline_mean": y_pred_baseline_test,
+    "y_pred_ols":           y_pred_ols_test,
+    "y_pred_ridge":         y_pred_ridge_test,
+    "y_pred_lasso":         y_pred_lasso_test,
+    "y_pred_tree":          y_pred_tree_test,
+    "y_pred_random_forest": y_pred_rf_test,
+    "y_pred_xgboost":       y_pred_xgb_test,
+})
+
+train_pred_path = os.path.join(OUTPUT_DIR, "train_predictions.csv")
+test_pred_path  = os.path.join(OUTPUT_DIR, "test_predictions.csv")
+
+train_pred_df.to_csv(train_pred_path, index=False)
+test_pred_df.to_csv(test_pred_path, index=False)

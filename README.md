@@ -10,11 +10,13 @@
 -  Kristóf Légrádi
 -  Ákos Virág
 
+---
 ### Project Overview
 This repository contains the code and analysis for a group project investigating the predictors of student academic performance in Hungary. We analyze primary school literature and mathematics scores from the 2019 National Assessment of Basic Competencies (Országos Kompetenciamérés - OKM), covering a dataset of over 70,000 students.
 
 The primary objective of this project is to predict student scores using various socio-economic and school-level features. A specific focus is placed on the methodological comparison between using tree-based machine learning models on raw data versus data imputed using the MissForest algorithm.
 
+---
 ### Repository Structure
 ```text
 .
@@ -51,6 +53,7 @@ The primary objective of this project is to predict student scores using various
 └── README.md                          # project description and usage
 ```
 
+---
 #### Scripts
 The analysis is divided into sequential notebooks and a main execution script located in the codes/ folder.
 
@@ -153,6 +156,7 @@ file: `figures/xgb_true_vs_predicted.png`
 file: `documents/analysis.pdf`
 -  The final written report summarizes the methodology, model comparisons, interpretation of feature importance, and conclusions regarding the efficacy of imputation in educational data mining.
 
+---
 ### Licence
 MIT License (MIT): see the [License File](https://github.com/sensiolabs/GotenbergBundle/blob/1.x/LICENSE) for more details.
 

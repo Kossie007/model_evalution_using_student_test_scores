@@ -4,6 +4,8 @@
 import importlib
 import subprocess
 import sys
+import os
+os.makedirs('../figures', exist_ok=True)
 
 def install_and_import(package, import_name=None):
     """
@@ -23,9 +25,10 @@ def install_and_import(package, import_name=None):
 # core libs
 pd = install_and_import("pandas")
 np = install_and_import("numpy")
-plt = install_and_import("matplotlib.pyplot", "matplotlib.pyplot")
-pytictoc = install_and_import("pytictoc")
 
+matplotlib = install_and_import("matplotlib")
+pytictoc = install_and_import("pytictoc")
+from matplotlib import pyplot as plt
 from pytictoc import TicToc
 
 #  seed
@@ -35,7 +38,7 @@ t = TicToc() #create instance of class for timer
 t.tic() #Start timer
 
 # sklearn model_selection only once
-sklearn_model_selection = install_and_import("sklearn.model_selection", "sklearn.model_selection")
+sklearn_model_selection = install_and_import("scikit-learn", "sklearn.model_selection")
 train_test_split = sklearn_model_selection.train_test_split
 
 # shared target_col+ split params
@@ -518,17 +521,29 @@ print(f"LinearRegression — Test R^2: {r2_score(y_te, y_lin):.3f} | "
 # Baseline regression: always predict 0
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --
 
-# Baseline predictions (all zeros)
-baseline_value = y_te.mean()
-y_pred_baseline = np.full_like(y_te, baseline_value, dtype=float)
+# Baseline regression: always predict 0
+baseline_value_tr = y_tr.mean()
+y_pred_baseline_tr = np.full_like(y_tr, baseline_value_tr, dtype=float)
 
 # Baseline metrics
-mse_baseline = mean_squared_error(y_te, y_pred_baseline)
-rmse_baseline = np.sqrt(mse_baseline)
-r2_baseline = r2_score(y_te, y_pred_baseline)
+mse_baseline_tr = mean_squared_error(y_tr, y_pred_baseline_tr)
+rmse_baseline_tr = np.sqrt(mse_baseline_tr)
+r2_baseline_tr = r2_score(y_tr, y_pred_baseline_tr)
 
-print("Baseline RMSE (predict 0):", rmse_baseline)
-print("Baseline R^2 (predict 0):", r2_baseline)
+print("Baseline Train RMSE (predict 0):", rmse_baseline_tr)
+print("Baseline Train R^2 (predict 0):", r2_baseline_tr)
+
+# Baseline predictions (all zeros)
+baseline_value_te = y_te.mean()
+y_pred_baseline_te = np.full_like(y_te, baseline_value_te, dtype=float)
+
+# Baseline metrics
+mse_baseline_te = mean_squared_error(y_te, y_pred_baseline_te)
+rmse_baseline_te = np.sqrt(mse_baseline_te)
+r2_baseline_te = r2_score(y_te, y_pred_baseline_te)
+
+print("Baseline Test RMSE (predict 0):", rmse_baseline_te)
+print("Baseline Test R^2 (predict 0):", r2_baseline_te)
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --
 # Ridge regression
@@ -552,9 +567,15 @@ ridge_cv.fit(X_tr_s, y_tr)
 best_lambda = ridge_cv.alpha_
 print("Best lambda by 5-fold CV (min RMSE):", best_lambda)
 
+y_hat_train_ridge = ridge_cv.predict(X_tr_s)
+R2_tr_ridge = r2_score(y_tr, y_hat_train_ridge)
+RMSE_tr_ridge = sqrt(mean_squared_error(y_tr, y_hat_train_ridge))
+
+print("Train R^2 score for RidgeCV model:", R2_tr_ridge)
+print("Train RMSE score for RidgeCV model:", RMSE_tr_ridge)
+
 # evaluate on test set
 y_hat_test = ridge_cv.predict(X_te_s)
-
 R2_test = r2_score(y_te, y_hat_test)
 RMSE_test = sqrt(mean_squared_error(y_te, y_hat_test))
 
@@ -605,8 +626,14 @@ lasso_cv.fit(X_tr_s, y_tr)
 best_lambda_lasso = lasso_cv.alpha_
 print("Best lambda by 5-fold CV (min RMSE, Lasso):", best_lambda_lasso)
 
-y_hat_test_lasso = lasso_cv.predict(X_te_s)
+y_hat_train_lasso = lasso_cv.predict(X_tr_s)
+R2_train_lasso = r2_score(y_tr, y_hat_train_lasso)
+RMSE_train_lasso = sqrt(mean_squared_error(y_tr, y_hat_train_lasso))
 
+print("Train R^2 score for LassoCV model:", R2_train_lasso)
+print("Train RMSE score for LassoCV model:", RMSE_train_lasso)
+
+y_hat_test_lasso = lasso_cv.predict(X_te_s)
 R2_test_lasso = r2_score(y_te, y_hat_test_lasso)
 RMSE_test_lasso = sqrt(mean_squared_error(y_te, y_hat_test_lasso))
 
@@ -727,7 +754,6 @@ categorical_features = selector(dtype_include=object)(X)
 
 # OneHotEncoder dense
 ohe_dense = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
-
 # Numeric pipeline: impute median
 numeric_pipe_tree = Pipeline([
     ('impute', SimpleImputer(strategy='median'))
@@ -783,40 +809,52 @@ tree_gs = GridSearchCV(
     param_grid_tree,
     cv=cv,
     scoring='neg_root_mean_squared_error',
-    n_jobs=-1
+    n_jobs=-3
 )
 tree_gs.fit(X_train, y_train)
 
 print("Best Decision Tree params:", tree_gs.best_params_)
 print("CV RMSE (mean of best):", -tree_gs.best_score_)
 
-# RF
+#RF
 rf_gs = GridSearchCV(
     rf_pipe,
     param_grid_rf,
     cv=cv,
     scoring='neg_root_mean_squared_error',
-    n_jobs=-1
+    n_jobs=-3
 )
 rf_gs.fit(X_train, y_train)
 
 print("Best Random Forest params:", rf_gs.best_params_)
 print("CV RMSE (mean of best):", -rf_gs.best_score_)
 
-# Step 7: Evaluating on held-out test set
+#Step 7.1: Evaluate on held-out train set
+# Decision Tree train  evaluation
+y_pred_tree_train = tree_gs.best_estimator_.predict(X_train)
+print("\nDecision Tree Train Performance:")
+print("Train Tree RMSE:", np.sqrt(mean_squared_error(y_train, y_pred_tree_train)))
+print("Train Tree R²:", r2_score(y_train, y_pred_tree_train))
+
+# Random Forest train evaluation
+y_pred_rf_train = rf_gs.best_estimator_.predict(X_train)
+print("\nRandom Forest Test Performance:")
+print("Train RF RMSE:", np.sqrt(mean_squared_error(y_train, y_pred_rf_train)))
+print("Train RF R²:", r2_score(y_train, y_pred_rf_train))
+
+
+#Step 7.2: Evaluate on held-out test set
 # Decision Tree test evaluation
-y_pred_tree = tree_gs.best_estimator_.predict(X_test)
+y_pred_tree_test= tree_gs.best_estimator_.predict(X_test)
 print("\nDecision Tree Test Performance:")
-print("RMSE:", np.sqrt(mean_squared_error(y_test, y_pred_tree)))
-print("R²:", r2_score(y_test, y_pred_tree))
-print("MAE:", mean_absolute_error(y_test, y_pred_tree))
+print("Test Tree RMSE:", np.sqrt(mean_squared_error(y_test, y_pred_tree_test)))
+print("Test Tree R²:", r2_score(y_test, y_pred_tree_test))
 
 # Random Forest test evaluation
-y_pred_rf = rf_gs.best_estimator_.predict(X_test)
+y_pred_rf_test = rf_gs.best_estimator_.predict(X_test)
 print("\nRandom Forest Test Performance:")
-print("RMSE:", np.sqrt(mean_squared_error(y_test, y_pred_rf)))
-print("R²:", r2_score(y_test, y_pred_rf))
-print("MAE:", mean_absolute_error(y_test, y_pred_rf))
+print("Test RF RMSE:", np.sqrt(mean_squared_error(y_test, y_pred_rf_test)))
+print("Test RF R²:", r2_score(y_test, y_pred_rf_test))
 
 # Extracting the best Decision Tree model from the GridSearchCV
 best_tree_model = tree_gs.best_estimator_.named_steps['model']
@@ -878,7 +916,7 @@ from xgboost import XGBRegressor, plot_importance
 from sklearn.model_selection import RandomizedSearchCV
 import matplotlib as mpl
 import matplotlib.ticker as mtick
-import os
+
 
 np.random.seed(seed)
 
@@ -938,16 +976,25 @@ random_search.fit(X_train, y_train)
 model = random_search.best_estimator_
 print("Best hyperparameters:", random_search.best_params_)
 
-# Predictions on test set
-y_pred = model.predict(X_test)
+# Predictions on tarin test set
+y_pred_tr = model.predict(X_train)
+y_pred_te = model.predict(X_test)
 
-# Regression metrics
-mse = mean_squared_error(y_test, y_pred)
-rmse = np.sqrt(mse)
-r2 = r2_score(y_test, y_pred)
+# Regression metrics train
+mse_tr = mean_squared_error(y_train, y_pred_tr)
+rmse_tr = np.sqrt(mse_tr)
+r2_tr = r2_score(y_train, y_pred_tr)
 
-print("RMSE (XGBoost):", rmse)
-print("R^2 (XGBoost):", r2)
+print("Train XGB RMSE:", rmse_tr)
+print("Train XGB R^2:", r2_tr)
+
+# Regression metrics test
+mse_te = mean_squared_error(y_test, y_pred_te)
+rmse_te = np.sqrt(mse_te)
+r2_te = r2_score(y_test, y_pred_te)
+
+print("Test XGB RMSE:", rmse_te)
+print("Test XGB R^2:", r2_te)
 
 # Plotting – same style as before
 mpl.rcParams.update({
@@ -966,13 +1013,13 @@ mpl.rcParams.update({
 # Plot 1. True vs. predicted values
 fig, ax = plt.subplots(figsize=(6, 6))
 
-ax.scatter(y_test, y_pred, s=20, alpha=0.6)
+ax.scatter(y_test, y_pred_te, s=20, alpha=0.6)
 ax.set_xlabel("True $math\\_score\\_8\\_std$")
 ax.set_ylabel("Predicted $math\\_score\\_8\\_std$")
 ax.set_title("True vs. predicted values (XGBoost)")
 
-min_val = min(y_test.min(), y_pred.min())
-max_val = max(y_test.max(), y_pred.max())
+min_val = min(y_test.min(), y_pred_te.min())
+max_val = max(y_test.max(), y_pred_te.max())
 ax.plot([min_val, max_val], [min_val, max_val],
         linestyle="--", linewidth=1)
 
@@ -987,7 +1034,7 @@ plt.show()
 plt.close(fig)
 
 # Plot 2. Residuals histogram
-residuals = y_test - y_pred
+residuals = y_test - y_pred_te
 
 fig, ax = plt.subplots(figsize=(6, 4))
 
@@ -1008,7 +1055,7 @@ plt.close(fig)
 # Plot 3. Residuals vs. fitted values
 fig, ax = plt.subplots(figsize=(6, 4))
 
-ax.scatter(y_pred, residuals, s=20, alpha=0.6)
+ax.scatter(y_pred_te, residuals, s=20, alpha=0.6)
 ax.axhline(0, linestyle="--", linewidth=1)
 
 ax.set_xlabel("Predicted $math\\_score\\_8\\_std$")
